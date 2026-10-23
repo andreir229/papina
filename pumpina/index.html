@@ -307,16 +307,20 @@
                 await autoFetchSQLiteFile();
             } catch (err) {
                 console.error("Failed to initialize sql.js WASM engine:", err);
+                /*
                 showStatusBanner(
                     'error',
                     'Failed to initialize SQLite WebAssembly Engine',
                     'Your browser blocked loading WebAssembly scripts from the CDN or JavaScript is restricted.'
                 );
+                */
             }
         }
 
         async function autoFetchSQLiteFile() {
+            /*
             showStatusBanner('info', 'Loading Database File...', 'Attempting to fetch "./pumpina_db" from local web server...');
+            */
             
             try {
                 const response = await fetch('./pumpina_db', { cache: "no-store" });
