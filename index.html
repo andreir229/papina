@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Papina – date deschise, acces liber pentru toată lumea</title>
+<meta name="description" content="Seturi de date deschise, gratuite și fără cont, pentru oricine vrea să le folosească.">
+<meta name="theme-color" content="#0a0e24">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,500..800&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0e24; --surface: #121842; --ink: #eef0ff; --muted: #9aa3d6; --line: #262e66;
+    --a: #5b7bff; --b: #ff5d8f; --c: #ffc857;
+    --head: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+    --body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 400 1.0625rem/1.65 var(--body); }
+  a { color: inherit; }
+  :focus-visible { outline: 3px solid var(--c); outline-offset: 3px; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 1.5rem; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; scroll-behavior: auto !important; } }
+
+  .hero { position: relative; min-height: 100vh; min-height: 100svh; display: flex; flex-direction: column; overflow: hidden; }
+  #field { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .hero::after { content: ""; position: absolute; inset: 0; pointer-events: none;
+    background: linear-gradient(90deg, var(--bg) 0%, rgba(10,14,36,.82) 32%, rgba(10,14,36,0) 68%),
+                linear-gradient(0deg, var(--bg) 0%, rgba(10,14,36,0) 30%); }
+  header.top, .hero-body { position: relative; z-index: 2; }
+  header.top { padding: 1.5rem 0; }
+  header.top .wrap { display: flex; justify-content: space-between; align-items: center; }
+  .brand { font: 800 1.35rem var(--head); text-decoration: none; display: flex; align-items: center; gap: .7rem; letter-spacing: -.01em; }
+  .brand i { width: 14px; height: 14px; border-radius: 50%; background: var(--c); box-shadow: 20px 0 0 var(--b); margin-right: 20px; }
+  .lang { display: flex; gap: .25rem; padding: .25rem; border: 1px solid var(--line); border-radius: 999px; background: rgba(10,14,36,.6); backdrop-filter: blur(6px); }
+  .lang button { font: 500 .9rem var(--body); color: var(--muted); background: none; border: 0; border-radius: 999px; padding: .3rem .8rem; cursor: pointer; transition: background .2s, color .2s; }
+  .lang button:hover { color: var(--ink); }
+  .lang button[aria-pressed="true"] { background: var(--c); color: #1a1500; }
+  .hero-body { flex: 1; display: flex; align-items: flex-end; padding-bottom: 4.5rem; pointer-events: none; }
+  .hero-body .wrap { width: 100%; }
+  h1 { font: 800 clamp(3.1rem, 10.5vw, 9rem)/.92 var(--head); font-stretch: 80%; letter-spacing: -.035em; margin: 0 0 1.75rem; max-width: 9.5em; }
+  .lead { font-size: 1.25rem; color: var(--muted); max-width: 33rem; margin: 0 0 2.25rem; }
+  .btn { pointer-events: auto; display: inline-block; background: var(--c); color: #1a1500; padding: .95rem 1.8rem; border-radius: 999px; text-decoration: none; font-weight: 500; transition: transform .2s, box-shadow .2s; }
+  .btn:hover { transform: translateY(-2px); box-shadow: 0 10px 30px -8px var(--c); }
+
+  .terms { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2.5rem; padding: 4.5rem 0; }
+  .terms h3 { font: 700 1.6rem/1.1 var(--head); margin: 0 0 .6rem; padding-top: 1.1rem; border-top: 3px solid var(--a); }
+  .terms div:nth-child(2) h3 { border-color: var(--b); }
+  .terms div:nth-child(3) h3 { border-color: var(--c); }
+  .terms p { margin: 0; color: var(--muted); }
+
+  section.sites { padding: 1rem 0 6rem; }
+  h2 { font: 800 clamp(2.2rem, 5vw, 3.4rem)/1 var(--head); letter-spacing: -.025em; margin: 0 0 .75rem; }
+  .sub { color: var(--muted); margin: 0 0 3rem; }
+  .list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+  .list li { border-bottom: 1px solid var(--line); }
+  .list a, .list .soon { position: relative; overflow: hidden; display: grid; grid-template-columns: 1fr auto; gap: .2rem 1.5rem; padding: 1.8rem .5rem; text-decoration: none; }
+  .list a::before { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(91,123,255,.28), rgba(255,93,143,.18)); transform: scaleX(0); transform-origin: left; transition: transform .45s cubic-bezier(.2,.7,.2,1); }
+  .list a:hover::before, .list a:focus-visible::before { transform: scaleX(1); }
+  .list a > *, .list .soon > * { position: relative; }
+  .list .name { font: 700 clamp(1.5rem, 3.2vw, 2.2rem)/1.1 var(--head); transition: transform .35s; }
+  .list a:hover .name { transform: translateX(14px); }
+  .list .desc { grid-column: 1; color: var(--muted); }
+  .list .tag { grid-row: 1; grid-column: 2; align-self: center; font-size: .9rem; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: .15rem .9rem; }
+  .list a .tag { border-color: var(--c); color: var(--c); }
+  .list .soon { opacity: .55; }
+
+  footer { border-top: 1px solid var(--line); padding: 2rem 0 3rem; color: var(--muted); font-size: .95rem; }
+
+  @media (max-width: 760px) {
+    .hero-body { padding-bottom: 5.5rem; }
+    .hero::after { background: linear-gradient(0deg, var(--bg) 8%, rgba(10,14,36,.75) 55%, rgba(10,14,36,.15) 100%); }
+    .terms { grid-template-columns: 1fr; gap: 2rem; padding: 3rem 0; }
+      }
+</style>
+</head>
+<body>
+
+<section class="hero" id="top">
+  <canvas id="field" aria-hidden="true"></canvas>
+  <header class="top">
+    <div class="wrap">
+      <a class="brand" href="#top"><i></i>Papina</a>
+      <div class="lang" role="group" aria-label="Language / Limbă"><button type="button" data-lang="ro" lang="ro">RO</button><button type="button" data-lang="en" lang="en">EN</button></div>
+    </div>
+  </header>
+  <div class="hero-body">
+    <div class="wrap">
+      <h1 data-i18n="h1">Date deschise, la îndemâna tuturor.</h1>
+      <p class="lead" data-i18n="lead">Aici găsești seturi de date pe care le poți vedea și folosi gratuit. Fără cont, fără plată, fără condiții ascunse.</p>
+      <a class="btn" href="#sites" data-i18n="btn">Vezi proiectele</a>
+    </div>
+  </div>
+</section>
+
+<main>
+  <div class="wrap">
+    <section class="terms" id="about">
+      <div><h3 data-i18n="t1h">Gratuit</h3><p data-i18n="t1p">Accesul nu costă nimic și nu ai nevoie de cont.</p></div>
+      <div><h3 data-i18n="t2h">Format deschis</h3><p data-i18n="t2p">Datele sunt publicate în formate pe care le citește orice program.</p></div>
+      <div><h3 data-i18n="t3h">Pentru toți</h3><p data-i18n="t3p">Le poți folosi în studiu, în proiecte personale sau în aplicații proprii.</p></div>
+    </section>
+
+    <section class="sites" id="sites">
+      <h2 data-i18n="h2">Proiecte</h2>
+      <p class="sub" data-i18n="sub">Fiecare proiect are propriul site și propriile date.</p>
+      <ul class="list" id="list"></ul>
+    </section>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap" data-i18n="foot">Papina (papina.ro) este un proiect personal.<br>Datele sunt oferite așa cum sunt, fără garanții.</div>
+</footer>
+
+<script>
+  /* ============================================================
+     AICI ADAUGI SUB-SITE-URILE.
+     Copiezi un obiect din listă, îi schimbi câmpurile și gata.
+       name   – titlul afișat, în ambele limbi: { ro: "...", en: "..." }
+       desc   – descrierea scurtă, în ambele limbi
+       url    – link-ul către sub-site (ex. "/vreme/" sau "https://...")
+       status – "live" (link activ) sau "soon" (apare estompat, fără link)
+     ============================================================ */
+  const SITES = [
+    { name: { ro: "Exemplu: Date meteo", en: "Example: Weather data" },
+      desc: { ro: "Înlocuiește acest rând cu primul tău sub-site.", en: "Replace this row with your first sub-site." },
+      url: "#", status: "soon" },
+    { name: { ro: "Următorul proiect", en: "Next project" },
+      desc: { ro: "Aici va apărea următorul set de date.", en: "The next dataset will appear here." },
+      url: "#", status: "soon" }
+  ];
+
+  /* textele paginii, în ambele limbi */
+  const TEXT = {
+    ro: {
+      title: "Papina – date deschise, acces liber pentru toată lumea",
+      meta: "Seturi de date deschise, gratuite și fără cont, pentru oricine vrea să le folosească.",
+      h1: "Date deschise, la îndemâna tuturor.",
+      lead: "Aici găsești seturi de date pe care le poți vedea și folosi gratuit. Fără cont, fără plată, fără condiții ascunse.",
+      btn: "Vezi proiectele",
+      t1h: "Gratuit", t1p: "Accesul nu costă nimic și nu ai nevoie de cont.",
+      t2h: "Format deschis", t2p: "Datele sunt publicate în formate pe care le citește orice program.",
+      t3h: "Pentru toți", t3p: "Le poți folosi în studiu, în proiecte personale sau în aplicații proprii.",
+      h2: "Proiecte", sub: "Fiecare proiect are propriul site și propriile date.",
+      foot: "Papina (papina.ro) este un proiect personal.<br>Datele sunt oferite așa cum sunt, fără garanții.",
+      live: "Disponibil", soon: "În curând"
+    },
+    en: {
+      title: "Papina – open data, free access for everyone",
+      meta: "Open datasets, free and with no account needed, for anyone who wants to use them.",
+      h1: "Open data, within everyone’s reach.",
+      lead: "Here you’ll find datasets you can view and use for free. No account, no payment, no hidden conditions.",
+      btn: "Browse projects",
+      t1h: "Free", t1p: "Access costs nothing and you don’t need an account.",
+      t2h: "Open formats", t2p: "Data is published in formats that any program can read.",
+      t3h: "For everyone", t3p: "Use them for study, personal projects or your own applications.",
+      h2: "Projects", sub: "Each project has its own site and its own data.",
+      foot: "Papina (papina.ro) is a personal project.<br>Data is provided as is, without warranties.",
+      live: "Available", soon: "Coming soon"
+    }
+  };
+
+  function setLang(lang, save) {
+    const T = TEXT[lang];
+    document.documentElement.lang = lang;
+    document.title = T.title;
+    document.querySelector('meta[name="description"]').content = T.meta;
+    document.querySelectorAll("[data-i18n]").forEach(el => { el.innerHTML = T[el.dataset.i18n]; });
+    document.getElementById("list").innerHTML = SITES.map(s => {
+      const live = s.status === "live";
+      const inner = `<span class="name">${s.name[lang]}</span>
+        <span class="tag">${live ? T.live : T.soon}</span>
+        <span class="desc">${s.desc[lang]}</span>`;
+      return live ? `<li><a href="${s.url}">${inner}</a></li>`
+                  : `<li><div class="soon">${inner}</div></li>`;
+    }).join("");
+    document.querySelectorAll(".lang button").forEach(b => b.setAttribute("aria-pressed", b.dataset.lang === lang));
+    if (save) { try { localStorage.setItem("lang", lang); } catch (e) {} }
+  }
+
+  document.querySelectorAll(".lang button").forEach(b => b.addEventListener("click", () => setLang(b.dataset.lang, true)));
+  let saved = null;
+  try { saved = localStorage.getItem("lang"); } catch (e) {}
+  setLang(saved === "ro" || saved === "en" ? saved : (navigator.language || "").toLowerCase().startsWith("ro") ? "ro" : "en", false);
+
+  /* câmpul de puncte: fiecare punct e o valoare, culoarea și mărimea îi arată mărimea */
+  const cv = document.getElementById("field"), ctx = cv.getContext("2d");
+  const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const stops = [[91,123,255],[255,93,143],[255,200,87]];
+  let W, H, mx = -999, my = -999, t = still ? 2 : 0, run = true;
+
+  function color(v) {
+    const x = v * 2, i = Math.min(1, Math.floor(x)), f = x - i, a = stops[i], b = stops[i + 1];
+    return `rgb(${a[0] + (b[0]-a[0])*f | 0},${a[1] + (b[1]-a[1])*f | 0},${a[2] + (b[2]-a[2])*f | 0})`;
+  }
+  function size() {
+    const d = Math.min(devicePixelRatio || 1, 2), r = cv.getBoundingClientRect();
+    W = r.width; H = r.height; cv.width = W * d; cv.height = H * d; ctx.setTransform(d, 0, 0, d, 0, 0);
+    if (still) draw();
+  }
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    const gap = W < 700 ? 18 : 24;
+    for (let y = gap / 2; y < H; y += gap) for (let x = gap / 2; x < W; x += gap) {
+      let v = (Math.sin(x*.008 + t*.8) + Math.sin(y*.011 - t*.6) + Math.sin((x+y)*.006 + t*.5) + 3) / 6;
+      const m = Math.max(0, 1 - Math.hypot(x - mx, y - my) / 170);
+      v = Math.min(1, v + m * .55);
+      ctx.globalAlpha = .3 + v * .7;
+      ctx.fillStyle = color(v);
+      ctx.beginPath(); ctx.arc(x, y, .8 + v*v*5.5 + m*2.5, 0, 6.2832); ctx.fill();
+    }
+  }
+  function loop() { if (run && !document.hidden) { t += .016; draw(); } requestAnimationFrame(loop); }
+
+  const hero = document.getElementById("top");
+  hero.addEventListener("pointermove", e => { const r = cv.getBoundingClientRect(); mx = e.clientX - r.left; my = e.clientY - r.top; if (still) draw(); });
+  hero.addEventListener("pointerleave", () => { mx = my = -999; if (still) draw(); });
+  new IntersectionObserver(e => run = e[0].isIntersecting).observe(hero);
+  addEventListener("resize", size);
+  size();
+  if (!still) loop();
+</script>
+</body>
+</html>

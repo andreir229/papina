@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pumpina: EU Fuel & Energy Analysis by Papina</title>
+    
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- sql.js WebAssembly SQLite Engine -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                            900: '#14532d',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen flex flex-col">
+
+    <!-- Top Header / Navigation Bar -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white shadow-md shadow-emerald-500/20">
+                        <i data-lucide="fuel" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-baseline space-x-1.5">
+                            <span class="text-2xl font-black tracking-tight text-slate-900">Pumpina</span>
+                            <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">Client SQLite</span>
+                        </div>
+                        <p class="text-xs text-slate-500 font-medium">EU Fuel & Energy Analysis <span class="text-slate-400">by Papina</span></p>
+                    </div>
+                </div>
+
+                <div class="flex items-center space-x-3">
+                    <div id="dbStatusBadge" class="hidden sm:flex items-center space-x-2 text-xs font-medium text-slate-600 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200">
+                        <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse" id="statusPulse"></span>
+                        <span id="dbStatusText">Initializing engine...</span>
+                    </div>
+
+                    <label class="cursor-pointer inline-flex items-center space-x-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold px-3 py-2 rounded-lg border border-slate-200 transition-colors">
+                        <i data-lucide="file-up" class="w-4 h-4 text-emerald-600"></i>
+                        <span>Open DB File</span>
+                        <input type="file" id="sqliteFileInput" accept="*" class="hidden">
+                    </label>
+
+                    <button id="exportCsvBtn" class="inline-flex items-center space-x-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold px-3.5 py-2 rounded-lg transition-colors shadow-sm">
+                        <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                        <span>Export CSV</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- System Status & File Load Warning Banner -->
+    <div id="statusBanner" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 hidden">
+        <div id="statusBannerContainer" class="p-4 rounded-xl border flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
+            <div class="flex items-start space-x-3">
+                <div id="bannerIcon" class="mt-0.5">
+                    <i data-lucide="info" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <h4 id="bannerTitle" class="font-bold text-sm">Status Title</h4>
+                    <p id="bannerMessage" class="mt-0.5 font-medium leading-relaxed">Status message details...</p>
+                </div>
+            </div>
+            <div id="bannerActionArea" class="flex-shrink-0"></div>
+        </div>
+    </div>
+
+    <!-- Main Dashboard Container -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+        <!-- Controls & Filters Bar -->
+        <section class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm">
+            <div class="flex items-center justify-between mb-3 border-b border-slate-100 pb-2">
+                <div class="flex items-center space-x-2">
+                    <i data-lucide="sliders" class="w-4 h-4 text-emerald-600"></i>
+                    <h2 class="text-sm font-semibold text-slate-900 uppercase tracking-wider">Query Controls</h2>
+                </div>
+                <span id="dataStatus" class="text-xs font-medium text-slate-500">0 records selected</span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div>
+                    <label for="countrySelect" class="block text-xs font-medium text-slate-600 mb-1">Country / Region</label>
+                    <div class="relative">
+                        <select id="countrySelect" class="w-full bg-slate-50 border border-slate-300 text-slate-800 text-sm rounded-xl focus:ring-emerald-500 focus:border-emerald-500 p-2.5 pr-8 appearance-none font-medium transition-all cursor-pointer">
+                            <option value="">-- Waiting for database --</option>
+                        </select>
+                        <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 absolute right-3 top-3 pointer-events-none"></i>
+                    </div>
+                </div>
+
+                <div>
+                    <label for="fuelSelect" class="block text-xs font-medium text-slate-600 mb-1">Fuel Type Column</label>
+                    <div class="relative">
+                        <select id="fuelSelect" class="w-full bg-slate-50 border border-slate-300 text-slate-800 text-sm rounded-xl focus:ring-emerald-500 focus:border-emerald-500 p-2.5 pr-8 appearance-none font-medium transition-all cursor-pointer">
+                            <option value="petrol_price">Eurosuper 95 (Petrol)</option>
+                            <option value="diesel_price">Automotive Gasoil (Diesel)</option>
+                            <option value="lpg_price">LPG (Liquefied Petroleum Gas)</option>
+                        </select>
+                        <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 absolute right-3 top-3 pointer-events-none"></i>
+                    </div>
+                </div>
+
+                <div>
+                    <label for="startDate" class="block text-xs font-medium text-slate-600 mb-1">Week Starting From</label>
+                    <input type="date" id="startDate" class="w-full bg-slate-50 border border-slate-300 text-slate-800 text-sm rounded-xl focus:ring-emerald-500 focus:border-emerald-500 p-2 font-medium transition-all">
+                </div>
+
+                <div>
+                    <label for="endDate" class="block text-xs font-medium text-slate-600 mb-1">Week Starting To</label>
+                    <input type="date" id="endDate" class="w-full bg-slate-50 border border-slate-300 text-slate-800 text-sm rounded-xl focus:ring-emerald-500 focus:border-emerald-500 p-2 font-medium transition-all">
+                </div>
+            </div>
+        </section>
+
+        <!-- KPI Metrics Summary Cards -->
+        <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Latest Price</span>
+                    <span class="p-2 bg-emerald-50 rounded-xl text-emerald-600">
+                        <i data-lucide="euro" class="w-5 h-5"></i>
+                    </span>
+                </div>
+                <div class="mt-3 flex items-baseline space-x-1">
+                    <span id="kpiLatestPrice" class="text-3xl font-extrabold text-slate-900">€0.000</span>
+                    <span class="text-xs text-slate-500 font-medium">/ Liter</span>
+                </div>
+                <div class="mt-2 flex items-center text-xs">
+                    <span id="kpiPriceDate" class="text-slate-400">Week starting --</span>
+                </div>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Weekly Shift</span>
+                    <span id="kpiChangeIconBg" class="p-2 rounded-xl bg-slate-100 text-slate-600">
+                        <i id="kpiChangeIcon" data-lucide="trending-up" class="w-5 h-5"></i>
+                    </span>
+                </div>
+                <div class="mt-3 flex items-baseline space-x-2">
+                    <span id="kpiChangePct" class="text-3xl font-extrabold text-slate-900">0.0%</span>
+                    <span id="kpiChangeAbs" class="text-xs font-semibold">€0.000</span>
+                </div>
+                <div class="mt-2 text-xs text-slate-400">Compared to prior week record</div>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Period High</span>
+                    <span class="p-2 bg-rose-50 rounded-xl text-rose-600">
+                        <i data-lucide="arrow-up-right" class="w-5 h-5"></i>
+                    </span>
+                </div>
+                <div class="mt-3 flex items-baseline space-x-1">
+                    <span id="kpiMaxPrice" class="text-3xl font-extrabold text-slate-900">€0.000</span>
+                    <span class="text-xs text-slate-500 font-medium">/ Liter</span>
+                </div>
+                <div class="mt-2 text-xs text-slate-400" id="kpiMaxDate">Peak price date</div>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Period Low</span>
+                    <span class="p-2 bg-blue-50 rounded-xl text-blue-600">
+                        <i data-lucide="arrow-down-right" class="w-5 h-5"></i>
+                    </span>
+                </div>
+                <div class="mt-3 flex items-baseline space-x-1">
+                    <span id="kpiMinPrice" class="text-3xl font-extrabold text-slate-900">€0.000</span>
+                    <span class="text-xs text-slate-500 font-medium">/ Liter</span>
+                </div>
+                <div class="mt-2 text-xs text-slate-400" id="kpiMinDate">Lowest price date</div>
+            </div>
+        </section>
+
+        <!-- Dynamic Chart Section -->
+        <section class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                <div>
+                    <h3 id="chartTitle" class="text-base font-bold text-slate-900">Fuel Price Evolution</h3>
+                    <p class="text-xs text-slate-500">Historical prices parsed live from SQLite database</p>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <span class="inline-flex items-center text-xs font-medium text-slate-600">
+                        <span class="w-3 h-3 rounded-full bg-emerald-500 inline-block mr-1.5"></span>
+                        Selected Fuel Series (€/L)
+                    </span>
+                </div>
+            </div>
+
+            <div class="relative w-full h-80">
+                <canvas id="pumpinaChart"></canvas>
+            </div>
+        </section>
+
+        <!-- Data Table Section -->
+        <section class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+                <div>
+                    <h3 class="text-base font-bold text-slate-900">Database Records</h3>
+                    <p class="text-xs text-slate-500">Live query result set from table <code class="bg-slate-100 px-1.5 py-0.5 rounded text-emerald-700 font-mono">fuel_prices</code></p>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs border-collapse">
+                    <thead>
+                        <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold uppercase tracking-wider">
+                            <th class="py-3.5 px-4">Week Starting Date</th>
+                            <th class="py-3.5 px-4">Country</th>
+                            <th class="py-3.5 px-4">Petrol (Eurosuper 95)</th>
+                            <th class="py-3.5 px-4">Diesel (Gasoil)</th>
+                            <th class="py-3.5 px-4">LPG</th>
+                            <th class="py-3.5 px-4 text-right">Selected Fuel</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dataTableBody" class="divide-y divide-slate-100 text-slate-700 font-medium">
+                        <tr>
+                            <td colspan="6" class="py-8 text-center text-slate-400">Loading database records...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 py-6 mt-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
+            <div>
+                <span class="font-bold text-slate-800">Pumpina</span> &copy; 2026 Papina Analysis. Client-Side WASM SQLite Execution.
+            </div>
+            <div class="flex items-center space-x-4">
+                <span id="footerDbName" class="font-mono text-slate-400">Database target: ./pumpina_db</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript Execution Engine -->
+    <script>
+        let SQL_ENGINE = null;
+        let DB_INSTANCE = null;
+        let ALL_RECORDS = [];
+        let pumpinaChartInstance = null;
+
+        async function initSqlEngine() {
+            updateStatus('badge', 'Loading WASM...', 'amber');
+            try {
+                const initSqlJs = window.initSqlJs;
+                SQL_ENGINE = await initSqlJs({
+                    locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${file}`
+                });
+                updateStatus('badge', 'WASM Ready', 'emerald');
+                await autoFetchSQLiteFile();
+            } catch (err) {
+                console.error("Failed to initialize sql.js WASM engine:", err);
+                showStatusBanner(
+                    'error',
+                    'Failed to initialize SQLite WebAssembly Engine',
+                    'Your browser blocked loading WebAssembly scripts from the CDN or JavaScript is restricted.'
+                );
+            }
+        }
+
+        async function autoFetchSQLiteFile() {
+            showStatusBanner('info', 'Loading Database File...', 'Attempting to fetch "./pumpina_db" from local web server...');
+            
+            try {
+                const response = await fetch('./pumpina_db', { cache: "no-store" });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const arrayBuffer = await response.arrayBuffer();
+                loadSQLiteBuffer(arrayBuffer, 'pumpina_db (auto-loaded)');
+
+            } catch (err) {
+                console.warn("Auto-fetch for pumpina_db failed:", err.message);
+
+                let isFileProtocol = window.location.protocol === 'file:';
+                let title = isFileProtocol ? 'Local File System Restricted (file://)' : 'Database File Not Found or Blocked';
+                let msg = isFileProtocol 
+                    ? 'Browsers prevent fetching SQLite files directly off the local file system (file://) for security. Please run a local web server (e.g. <code>python -m http.server</code> or VS Code Live Server) OR select your <code>pumpina_db</code> file directly using the picker.'
+                    : 'Could not auto-load <code>pumpina_db</code> from the web server directory. Make sure the file exists in the same folder as <code>index.html</code>, or upload it manually using the button on the right.';
+
+                showStatusBanner('warning', title, msg, true);
+            }
+        }
+
+        function loadSQLiteBuffer(buffer, sourceName) {
+            try {
+                if (DB_INSTANCE) {
+                    DB_INSTANCE.close();
+                }
+
+                DB_INSTANCE = new SQL_ENGINE.Database(new Uint8Array(buffer));
+
+                const checkTable = DB_INSTANCE.exec("SELECT name FROM sqlite_master WHERE type='table' AND name='fuel_prices';");
+                if (checkTable.length === 0 || checkTable[0].values.length === 0) {
+                    showStatusBanner(
+                        'error', 
+                        'Invalid Table Schema', 
+                        'Database opened, but table <code>fuel_prices</code> was not found. Please verify your SQLite CREATE TABLE schema.'
+                    );
+                    return;
+                }
+
+                const query = "SELECT country, week_starting_date, petrol_price, diesel_price, lpg_price FROM fuel_prices ORDER BY week_starting_date ASC";
+                const result = DB_INSTANCE.exec(query);
+
+                if (result.length === 0) {
+                    ALL_RECORDS = [];
+                } else {
+                    const columns = result[0].columns;
+                    const values = result[0].values;
+
+                    ALL_RECORDS = values.map(row => {
+                        let record = {};
+                        columns.forEach((col, index) => {
+                            record[col] = row[index];
+                        });
+                        return {
+                            country: String(record.country || ''),
+                            week_starting_date: String(record.week_starting_date || ''),
+                            petrol_price: record.petrol_price !== null ? Number(record.petrol_price) : null,
+                            diesel_price: record.diesel_price !== null ? Number(record.diesel_price) : null,
+                            lpg_price: record.lpg_price !== null ? Number(record.lpg_price) : null
+                        };
+                    });
+                }
+
+                populateCountryDropdown();
+                initializeDatePickers();
+                
+                showStatusBanner(
+                    'success', 
+                    'Database Loaded Successfully', 
+                    `Connected to <b>${sourceName}</b>. Loaded <b>${ALL_RECORDS.length}</b> total fuel price records.`
+                );
+
+                updateStatus('badge', `${ALL_RECORDS.length} Records Loaded`, 'emerald');
+                document.getElementById('footerDbName').innerText = `Source: ${sourceName}`;
+
+                refreshDashboard();
+
+            } catch (err) {
+                console.error("Error executing SQLite query:", err);
+                showStatusBanner('error', 'SQLite Query Execution Error', err.message);
+            }
+        }
+
+        function populateCountryDropdown() {
+            const countrySelect = document.getElementById('countrySelect');
+            countrySelect.innerHTML = '';
+
+            const countries = [...new Set(ALL_RECORDS.map(r => r.country))].sort();
+
+            if (countries.length === 0) {
+                countrySelect.innerHTML = '<option value="">No countries found</option>';
+                return;
+            }
+
+            countries.forEach(country => {
+                const opt = document.createElement('option');
+                opt.value = country;
+                opt.textContent = country;
+                countrySelect.appendChild(opt);
+            });
+
+            if (countries.includes('Romania')) {
+                countrySelect.value = 'Romania';
+            } else {
+                countrySelect.value = countries[0];
+            }
+        }
+
+        function initializeDatePickers() {
+            if (ALL_RECORDS.length === 0) return;
+
+            const dates = ALL_RECORDS.map(r => r.week_starting_date).sort();
+            const minDate = dates[0];
+            const maxDate = dates[dates.length - 1];
+
+            const startDateInput = document.getElementById('startDate');
+            const endDateInput = document.getElementById('endDate');
+
+            startDateInput.min = minDate;
+            startDateInput.max = maxDate;
+            endDateInput.min = minDate;
+            endDateInput.max = maxDate;
+
+            startDateInput.value = minDate;
+            endDateInput.value = maxDate;
+        }
+
+        function getFilteredRecords() {
+            const selectedCountry = document.getElementById('countrySelect').value;
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+
+            return ALL_RECORDS.filter(r => {
+                const matchCountry = !selectedCountry || r.country === selectedCountry;
+                const matchStart = !startDate || r.week_starting_date >= startDate;
+                const matchEnd = !endDate || r.week_starting_date <= endDate;
+                return matchCountry && matchStart && matchEnd;
+            }).sort((a, b) => a.week_starting_date.localeCompare(b.week_starting_date));
+        }
+
+        function updateKPIs(records, fuelCol) {
+            if (!records || records.length === 0) {
+                document.getElementById('kpiLatestPrice').innerText = '€0.000';
+                document.getElementById('kpiPriceDate').innerText = 'Week starting --';
+                document.getElementById('kpiChangePct').innerText = '0.0%';
+                document.getElementById('kpiChangeAbs').innerText = '€0.000';
+                document.getElementById('kpiMaxPrice').innerText = '€0.000';
+                document.getElementById('kpiMinPrice').innerText = '€0.000';
+                return;
+            }
+
+            const validRecords = records.filter(r => r[fuelCol] !== null && !isNaN(r[fuelCol]));
+
+            if (validRecords.length === 0) {
+                document.getElementById('kpiLatestPrice').innerText = 'N/A';
+                document.getElementById('kpiPriceDate').innerText = 'No data for fuel column';
+                return;
+            }
+
+            const latest = validRecords[validRecords.length - 1];
+            const prev = validRecords.length > 1 ? validRecords[validRecords.length - 2] : latest;
+
+            const latestPrice = latest[fuelCol];
+            const prevPrice = prev[fuelCol];
+
+            document.getElementById('kpiLatestPrice').innerText = `€${latestPrice.toFixed(3)}`;
+            document.getElementById('kpiPriceDate').innerText = `Week starting ${latest.week_starting_date}`;
+
+            const diff = latestPrice - prevPrice;
+            const pct = prevPrice > 0 ? (diff / prevPrice) * 100 : 0;
+
+            const pctElem = document.getElementById('kpiChangePct');
+            const absElem = document.getElementById('kpiChangeAbs');
+            const iconBg = document.getElementById('kpiChangeIconBg');
+            const iconElem = document.getElementById('kpiChangeIcon');
+
+            pctElem.innerText = (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%';
+            absElem.innerText = `(${diff >= 0 ? '+' : ''}${diff.toFixed(3)} €)`;
+
+            if (diff > 0) {
+                pctElem.className = 'text-3xl font-extrabold text-red-600';
+                absElem.className = 'text-xs font-semibold text-red-600';
+                iconBg.className = 'p-2 rounded-xl bg-red-50 text-red-600';
+                iconElem.setAttribute('data-lucide', 'trending-up');
+            } else if (diff < 0) {
+                pctElem.className = 'text-3xl font-extrabold text-emerald-600';
+                absElem.className = 'text-xs font-semibold text-emerald-600';
+                iconBg.className = 'p-2 rounded-xl bg-emerald-50 text-emerald-600';
+                iconElem.setAttribute('data-lucide', 'trending-down');
+            } else {
+                pctElem.className = 'text-3xl font-extrabold text-slate-700';
+                absElem.className = 'text-xs font-semibold text-slate-500';
+                iconBg.className = 'p-2 rounded-xl bg-slate-100 text-slate-600';
+                iconElem.setAttribute('data-lucide', 'minus');
+            }
+
+            const prices = validRecords.map(r => r[fuelCol]);
+            const maxVal = Math.max(...prices);
+            const minVal = Math.min(...prices);
+
+            const maxRecord = validRecords.find(r => r[fuelCol] === maxVal);
+            const minRecord = validRecords.find(r => r[fuelCol] === minVal);
+
+            document.getElementById('kpiMaxPrice').innerText = `€${maxVal.toFixed(3)}`;
+            document.getElementById('kpiMaxDate').innerText = `On ${maxRecord ? maxRecord.week_starting_date : '--'}`;
+
+            document.getElementById('kpiMinPrice').innerText = `€${minVal.toFixed(3)}`;
+            document.getElementById('kpiMinDate').innerText = `On ${minRecord ? minRecord.week_starting_date : '--'}`;
+
+            lucide.createIcons();
+        }
+
+        function updateChart(records, country, fuelCol) {
+            const ctx = document.getElementById('pumpinaChart').getContext('2d');
+            const fuelLabels = {
+                'petrol_price': 'Eurosuper 95 (Petrol)',
+                'diesel_price': 'Automotive Gasoil (Diesel)',
+                'lpg_price': 'LPG'
+            };
+
+            document.getElementById('chartTitle').innerText = `${country} — ${fuelLabels[fuelCol]} Evolution`;
+
+            const labels = records.map(r => r.week_starting_date);
+            const dataPoints = records.map(r => r[fuelCol]);
+
+            if (pumpinaChartInstance) {
+                pumpinaChartInstance.destroy();
+            }
+
+            pumpinaChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: `${fuelLabels[fuelCol]} (€/L)`,
+                        data: dataPoints,
+                        borderColor: '#16a34a',
+                        backgroundColor: 'rgba(22, 163, 74, 0.08)',
+                        fill: true,
+                        tension: 0.3,
+                        borderWidth: 2.5,
+                        pointBackgroundColor: '#16a34a',
+                        pointRadius: 4,
+                        pointHoverRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            backgroundColor: '#0f172a',
+                            titleFont: { family: 'Inter', size: 12 },
+                            bodyFont: { family: 'Inter', size: 12 },
+                            padding: 10,
+                            callbacks: {
+                                title: function(context) {
+                                    return `Week Starting Date: ${context[0].label}`;
+                                },
+                                label: function(context) {
+                                    return ` Price: €${context.raw !== null ? context.raw.toFixed(3) : 'N/A'}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            ticks: { font: { family: 'Inter', size: 11 }, color: '#64748b' },
+                            title: {
+                                display: true,
+                                text: 'Week Starting Date',
+                                font: { family: 'Inter', size: 11, weight: '500' },
+                                color: '#94a3b8'
+                            }
+                        },
+                        y: {
+                            grid: { color: '#f1f5f9' },
+                            ticks: {
+                                font: { family: 'Inter', size: 11 },
+                                color: '#64748b',
+                                callback: function(val) { return '€' + val.toFixed(2); }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateTable(records, fuelCol) {
+            const tbody = document.getElementById('dataTableBody');
+            tbody.innerHTML = '';
+
+            if (records.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="py-8 text-center text-slate-400">
+                            No records found matching query filter.
+                        </td>
+                    </tr>`;
+                return;
+            }
+
+            [...records].reverse().forEach(r => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-50/80 transition-colors';
+                
+                const petrolStr = r.petrol_price !== null ? `€${r.petrol_price.toFixed(3)}` : '—';
+                const dieselStr = r.diesel_price !== null ? `€${r.diesel_price.toFixed(3)}` : '—';
+                const lpgStr = r.lpg_price !== null ? `€${r.lpg_price.toFixed(3)}` : '—';
+                const selectedVal = r[fuelCol] !== null ? `€${r[fuelCol].toFixed(3)}` : '—';
+
+                tr.innerHTML = `
+                    <td class="py-3 px-4 font-semibold text-slate-900">${r.week_starting_date}</td>
+                    <td class="py-3 px-4 text-slate-700">${r.country}</td>
+                    <td class="py-3 px-4 font-mono text-slate-600">${petrolStr}</td>
+                    <td class="py-3 px-4 font-mono text-slate-600">${dieselStr}</td>
+                    <td class="py-3 px-4 font-mono text-slate-600">${lpgStr}</td>
+                    <td class="py-3 px-4 font-mono font-bold text-emerald-700 text-right">${selectedVal}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function refreshDashboard() {
+            const filteredRecords = getFilteredRecords();
+            const country = document.getElementById('countrySelect').value;
+            const fuelCol = document.getElementById('fuelSelect').value;
+
+            document.getElementById('dataStatus').innerText = `Showing ${filteredRecords.length} records`;
+
+            updateKPIs(filteredRecords, fuelCol);
+            updateChart(filteredRecords, country, fuelCol);
+            updateTable(filteredRecords, fuelCol);
+        }
+
+        function showStatusBanner(type, title, message, showUploader = false) {
+            const banner = document.getElementById('statusBanner');
+            const container = document.getElementById('statusBannerContainer');
+            const titleElem = document.getElementById('bannerTitle');
+            const msgElem = document.getElementById('bannerMessage');
+            const actionArea = document.getElementById('bannerActionArea');
+            const iconElem = document.getElementById('bannerIcon');
+
+            banner.classList.remove('hidden');
+
+            const styles = {
+                info: {
+                    bg: 'bg-blue-50 border-blue-200 text-blue-900',
+                    icon: 'info',
+                    iconColor: 'text-blue-600'
+                },
+                success: {
+                    bg: 'bg-emerald-50 border-emerald-200 text-emerald-900',
+                    icon: 'check-circle-2',
+                    iconColor: 'text-emerald-600'
+                },
+                warning: {
+                    bg: 'bg-amber-50 border-amber-200 text-amber-900',
+                    icon: 'alert-triangle',
+                    iconColor: 'text-amber-600'
+                },
+                error: {
+                    bg: 'bg-rose-50 border-rose-200 text-rose-900',
+                    icon: 'alert-circle',
+                    iconColor: 'text-rose-600'
+                }
+            };
+
+            const config = styles[type] || styles.info;
+            container.className = `p-4 rounded-xl border flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs ${config.bg}`;
+            titleElem.innerText = title;
+            msgElem.innerHTML = message;
+
+            iconElem.className = `mt-0.5 ${config.iconColor}`;
+            iconElem.setAttribute('data-lucide', config.icon);
+
+            actionArea.innerHTML = '';
+            if (showUploader) {
+                const label = document.createElement('label');
+                label.className = 'cursor-pointer inline-flex items-center space-x-1.5 bg-amber-600 hover:bg-amber-700 text-white font-semibold px-3 py-2 rounded-lg transition-colors shadow-sm';
+                label.innerHTML = `<i data-lucide="upload" class="w-4 h-4"></i><span>Select Local DB File</span>`;
+                
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = '*';
+                input.className = 'hidden';
+                input.addEventListener('change', handleFileSelect);
+
+                label.appendChild(input);
+                actionArea.appendChild(label);
+            }
+
+            lucide.createIcons();
+        }
+
+        function updateStatus(mode, text, color = 'emerald') {
+            const badge = document.getElementById('dbStatusBadge');
+            const textElem = document.getElementById('dbStatusText');
+            const pulse = document.getElementById('statusPulse');
+
+            badge.classList.remove('hidden');
+            textElem.innerText = text;
+            
+            const colorMap = {
+                emerald: 'bg-emerald-500',
+                amber: 'bg-amber-500',
+                rose: 'bg-rose-500'
+            };
+            pulse.className = `w-2 h-2 rounded-full ${colorMap[color] || 'bg-slate-400'}`;
+        }
+
+        function handleFileSelect(e) {
+            const files = e.target.files;
+            if (!files || files.length === 0) return;
+
+            const file = files[0];
+            const reader = new FileReader();
+
+            showStatusBanner('info', 'Reading Selected File...', `Parsing local file <b>${file.name}</b>...`);
+
+            reader.onload = function() {
+                loadSQLiteBuffer(this.result, file.name);
+            };
+
+            reader.readAsArrayBuffer(file);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+
+            document.getElementById('countrySelect').addEventListener('change', refreshDashboard);
+            document.getElementById('fuelSelect').addEventListener('change', refreshDashboard);
+            document.getElementById('startDate').addEventListener('change', refreshDashboard);
+            document.getElementById('endDate').addEventListener('change', refreshDashboard);
+
+            document.getElementById('sqliteFileInput').addEventListener('change', handleFileSelect);
+
+            document.getElementById('exportCsvBtn').addEventListener('click', () => {
+                const records = getFilteredRecords();
+                if (records.length === 0) return;
+
+                let csv = "data:text/csv;charset=utf-8,Country,WeekStartingDate,PetrolPrice,DieselPrice,LpgPrice\n";
+                records.forEach(r => {
+                    csv += `"${r.country}","${r.week_starting_date}",${r.petrol_price ?? ''},${r.diesel_price ?? ''},${r.lpg_price ?? ''}\n`;
+                });
+
+                const encodedUri = encodeURI(csv);
+                const a = document.createElement('a');
+                a.href = encodedUri;
+                a.download = `Pumpina_${document.getElementById('countrySelect').value || 'Export'}_${new Date().toISOString().slice(0,10)}.csv`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            });
+
+            initSqlEngine();
+        });
+    </script>
+</body>
+</html>
