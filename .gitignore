@@ -1,5 +1,5 @@
 # Ignore specific local configuration files
-
+/pumpina/pumpina_db
 
 # Ignore entire folders (e.g., node_modules or cache)
 /pumpina/ignores
