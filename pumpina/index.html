@@ -281,7 +281,7 @@
     <footer class="bg-white border-t border-slate-200 py-6 mt-8">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
             <div>
-                <span class="font-bold text-slate-800">Pumpina</span> &copy; 2026 Papina Analysis. Client-Side WASM SQLite Execution.
+                <span class="font-bold text-slate-800">Pumpina</span> &copy; Papina.ro
             </div>
             <div class="flex items-center space-x-4">
                 <span id="footerDbName" class="font-mono text-slate-400">Database target: ./pumpina_db</span>
@@ -386,11 +386,14 @@
                 populateCountryDropdown();
                 initializeDatePickers();
                 
+                // hidet the status banner
+                /*
                 showStatusBanner(
                     'success', 
                     'Database Loaded Successfully', 
                     `Connected to <b>${sourceName}</b>. Loaded <b>${ALL_RECORDS.length}</b> total fuel price records.`
                 );
+                */
 
                 updateStatus('badge', `${ALL_RECORDS.length} Records Loaded`, 'emerald');
                 document.getElementById('footerDbName').innerText = `Source: ${sourceName}`;
